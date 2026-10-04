@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>માઈક્રોમીટર રીડિંગ પ્રેક્ટિસ ટેસ્ટ</title>
+    <title>માઈક્રોમીટર રીડિંગ ઓનલાઈન ટેસ્ટ</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 750px; background: white; margin: 0 auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; }
+        .container { max-width: 700px; background: white; margin: 0 auto; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 5px; }
+        .author-tag { text-align: center; font-size: 14px; font-weight: bold; color: #16a085; background: #e8f8f5; padding: 8px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #a3e4d7; }
         .form-group { margin-bottom: 15px; }
         label { font-weight: bold; display: block; margin-bottom: 5px; color: #333; }
         input[type="text"], input[type="tel"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
-        .question-card { background: #eef2f5; padding: 15px; margin-bottom: 20px; border-left: 5px solid #3498db; border-radius: 4px; }
-        .question-title { font-weight: bold; font-size: 1.1em; color: #2c3e50; margin-bottom: 10px; }
-        .svg-container { text-align: center; margin: 15px 0; background: #ffffff; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
-        button { background: #27ae60; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; }
+        .question-card { background: #f8f9fa; padding: 15px; margin-bottom: 20px; border-left: 5px solid #3498db; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .question-title { font-weight: bold; font-size: 1.05em; color: #2c3e50; margin-bottom: 10px; }
+        .micrometer-svg { width: 100%; max-width: 500px; height: auto; display: block; margin: 10px auto; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 5px; }
+        button { background: #27ae60; color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%; transition: 0.3s; }
         button:hover { background: #219150; }
-        #registration, #quiz-area, #result-area { display: none; }
+        #quiz-area, #result-area { display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>માઈક્રોમીટર રીડિંગ ઓનલાઈન ટેસ્ટ</h2>
+    <div class="author-tag">Test Created by Yuvrajsinh Kosamia - ITI Ankleshwar (Mechanic Diesel)</div>
 
-    <!-- રજીસ્ટ્રેશન ફોર્મ -->
-    <div id="registration" style="display: block;">
+    <!-- ૧. રજીસ્ટ્રેશન ફોર્મ -->
+    <div id="registration">
         <div class="form-group">
             <label>તાલીમાર્થીનું નામ:</label>
             <input type="text" id="traineeName" placeholder="તમારું પૂરૂં નામ લખો" required>
@@ -37,7 +39,7 @@
         <button onclick="startQuiz()">ટેસ્ટ શરૂ કરો</button>
     </div>
 
-    <!-- ક્વિઝ એરિયા -->
+    <!-- ૨. ક્વિઝ એરિયા (૨૦ પ્રશ્નો) -->
     <div id="quiz-area">
         <form id="quizForm">
             <div id="questionsContainer"></div>
@@ -45,86 +47,100 @@
         </form>
     </div>
 
-    <!-- રિઝલ્ટ એરિયા -->
+    <!-- ૩. રિઝલ્ટ એરિયા -->
     <div id="result-area" style="text-align: center;">
         <h3 style="color: #27ae60;">તમારી ટેસ્ટ સફળતાપૂર્વક સબમિટ થઈ ગઈ છે!</h3>
-        <p id="scoreText" style="font-size: 18px; font-weight: bold;"></p>
+        <p id="scoreText" style="font-size: 20px; font-weight: bold; color: #2c3e50;"></p>
+        <p style="color: #7f8c8d;">તમારું પરિણામ ઓટોમેટિક રેકોર્ડ થઈ ગયું છે.</p>
     </div>
 </div>
 
 <script>
-    // તમારી Google Apps Script ની URL
+    // તમારી Google Apps Script ની ઓરિજિનલ Web App URL
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzdAg0vv-sWwcEfSQytap-L5L0sioEHND-EdH3ssdtHhN5IDaghifwcqJMkY51F92bTrw/exec';
     
     let traineeData = {};
     let selectedQuestions = [];
 
-    // ડાયનેમિક માઈક્રોમીટર ડ્રોઈંગ (SVG)
-    function drawMicrometer(mainScale, subScale, thimbleScale) {
-        let svg = `<svg width="100%" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
-            <!-- Sleeve Background -->
-            <rect x="20" y="35" width="220" height="50" fill="#d0d7de" stroke="#333" stroke-width="2"/>
-            <!-- Datum Line -->
-            <line x1="20" y1="60" x2="240" y2="60" stroke="#000" stroke-width="2"/>`;
+    // SVG માઈક્રોમીટર ડ્રોઈંગ જનરેટર
+    function generateMicrometerSVG(mainScale, subScale, thimbleScale) {
+        let thimbleOffset = (mainScale + subScale) * 12;
+        let thimbleRotation = (thimbleScale / 50) * 100;
 
-        // Main scale lines (0-20mm)
-        for (let i = 0; i <= 20; i++) {
-            let x = 40 + (i * 8);
-            let y2 = (i % 5 === 0) ? 40 : 48;
-            svg += `<line x1="${x}" y1="60" x2="${x}" y2="${y2}" stroke="#000" stroke-width="1.5"/>`;
-            if (i % 5 === 0) {
-                svg += `<text x="${x}" y="36" font-size="10" text-anchor="middle" font-family="sans-serif">${i}</text>`;
-            }
-            // Sub-scale (0.5mm lines)
-            if (i < 20) {
-                svg += `<line x1="${x + 4}" y1="60" x2="${x + 4}" y2="72" stroke="#000" stroke-width="1.5"/>`;
+        let mainScaleLines = '';
+        for (let i = 0; i <= 25; i++) {
+            let x = 120 + (i * 12);
+            let isFive = (i % 5 === 0);
+            let h = isFive ? 25 : 15;
+            mainScaleLines += `<line x1="${x}" y1="80" x2="${x}" y2="${80 - h}" stroke="#333" stroke-width="${isFive ? 2 : 1}"/>`;
+            if (isFive) {
+                mainScaleLines += `<text x="${x}" y="${80 - 28}" font-size="11" text-anchor="middle" fill="#333">${i}</text>`;
             }
         }
 
-        // Thimble Position calculation
-        let thimbleX = 40 + (mainScale * 8) + (subScale === 0.5 ? 4 : 0);
+        let subScaleLines = '';
+        for (let i = 0; i < 25; i++) {
+            let x = 126 + (i * 12);
+            subScaleLines += `<line x1="${x}" y1="80" x2="${x}" y2="95" stroke="#333" stroke-width="1"/>`;
+        }
 
-        // Thimble Background
-        svg += `<path d="M ${thimbleX} 25 L ${thimbleX + 120} 25 L ${thimbleX + 120} 95 L ${thimbleX} 95 Z" fill="#a0aab2" stroke="#333" stroke-width="2"/>`;
-        svg += `<line x1="${thimbleX}" y1="25" x2="${thimbleX}" y2="95" stroke="#000" stroke-width="2"/>`;
-
-        // Thimble Divisions
-        for (let t = -5; t <= 5; t++) {
-            let val = (thimbleScale + t + 50) % 50;
-            let y = 60 - (t * 6);
-            if (y >= 30 && y <= 90) {
-                let len = (val % 5 === 0) ? 20 : 10;
-                svg += `<line x1="${thimbleX}" y1="${y}" x2="${thimbleX + len}" y2="${y}" stroke="#000" stroke-width="1"/>`;
-                if (val % 5 === 0) {
-                    svg += `<text x="${thimbleX + 26}" y="${y + 3}" font-size="9" text-anchor="middle" font-family="sans-serif">${val}</text>`;
+        let thimbleLines = '';
+        for (let i = -5; i <= 55; i++) {
+            let y = 80 - ((i - thimbleScale) * 3);
+            if (y >= 20 && y <= 140) {
+                let isFive = (i % 5 === 0);
+                thimbleLines += `<line x1="${240 + thimbleOffset}" y1="${y}" x2="${255 + thimbleOffset}" y2="${y}" stroke="#fff" stroke-width="${isFive ? 2 : 1}"/>`;
+                if (isFive && i >= 0 && i < 50) {
+                    thimbleLines += `<text x="${260 + thimbleOffset}" y="${y + 4}" font-size="10" fill="#fff" font-weight="bold">${i}</text>`;
                 }
             }
         }
 
-        svg += `</svg>`;
-        return svg;
+        return `
+        <svg class="micrometer-svg" viewBox="0 0 500 160" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="#ffffff"/>
+            <!-- Frame and Sleeve -->
+            <rect x="20" y="65" width="90" height="30" fill="#7f8c8d" rx="3"/>
+            <rect x="110" y="50" width="320" height="60" fill="#bdc3c7" stroke="#7f8c8d" stroke-width="2"/>
+            
+            <!-- Datum Line -->
+            <line x1="110" y1="80" x2="${240 + thimbleOffset}" y2="80" stroke="#c0392b" stroke-width="2"/>
+            
+            <!-- Main Scale & Sub Scale -->
+            ${mainScaleLines}
+            ${subScaleLines}
+            
+            <!-- Thimble -->
+            <path d="M ${240 + thimbleOffset} 30 L ${270 + thimbleOffset} 30 L ${290 + thimbleOffset} 45 L ${290 + thimbleOffset} 115 L ${270 + thimbleOffset} 130 L ${240 + thimbleOffset} 130 Z" fill="#2c3e50" stroke="#1a252f" stroke-width="2"/>
+            <line x1="${240 + thimbleOffset}" y1="30" x2="${240 + thimbleOffset}" y2="130" stroke="#e74c3c" stroke-width="3"/>
+            
+            <!-- Thimble Scale Lines -->
+            ${thimbleLines}
+            
+            <!-- Ratchet Stop -->
+            <rect x="${290 + thimbleOffset}" y="60" width="40" height="40" fill="#7f8c8d" rx="2"/>
+        </svg>`;
     }
 
-    // રેન્ડમ માઈક્રોમીટર પ્રશ્નો જનરેટ કરવા માટેનો પૂલ
+    // ૨૦ રેન્ડમ પ્રશ્નો જનરેટ કરવા માટે
     function generateQuestions() {
         let questions = [];
-        for (let i = 0; i < 50; i++) {
-            let mainScale = Math.floor(Math.random() * 15); // Main Scale (0-15 mm)
-            let subScale = Math.random() < 0.5 ? 0.0 : 0.5; // Sub Scale (0.0 or 0.5 mm)
-            let thimbleScale = Math.floor(Math.random() * 50); // Thimble Scale (0-49)
+        for (let i = 0; i < 40; i++) {
+            let mainScale = Math.floor(Math.random() * 18);
+            let subScale = Math.random() < 0.5 ? 0.0 : 0.5;
+            let thimbleScale = Math.floor(Math.random() * 50);
             
             let totalReading = (mainScale + subScale + (thimbleScale * 0.01)).toFixed(2);
             
             questions.push({
-                main: mainScale,
-                sub: subScale,
-                thimble: thimbleScale,
-                text: `નીચે આપેલા માઈક્રોમીટરનું સાચું રીડિંગ શોધો (mm માં):`,
+                mainScale: mainScale,
+                subScale: subScale,
+                thimbleScale: thimbleScale,
                 correctAnswer: totalReading
             });
         }
-        
-        return questions.sort(() => 0.5 - Math.random()).slice(0, 25);
+        // શફલ કરીને ૨૦ પ્રશ્નો પસંદ કરવા
+        return questions.sort(() => 0.5 - Math.random()).slice(0, 20);
     }
 
     function startQuiz() {
@@ -132,7 +148,7 @@
         const mobile = document.getElementById('traineeMobile').value.trim();
 
         if (name === "" || mobile.length !== 10) {
-            alert("કૃપા કરીને સાચું નામ અને 10 અંકનો મોબાઈલ નંબર નાખો.");
+            alert("કૃપા કરીને તમારું પૂરું નામ અને ૧૦ અંકનો યોગ્ય મોબાઈલ નંબર દાખલ કરો.");
             return;
         }
 
@@ -149,27 +165,33 @@
         selectedQuestions.forEach((q, index) => {
             const qDiv = document.createElement('div');
             qDiv.className = 'question-card';
+            
+            const svgCode = generateMicrometerSVG(q.mainScale, q.subScale, q.thimbleScale);
+            
             qDiv.innerHTML = `
-                <div class="question-title">${index + 1}. ${q.text}</div>
-                <div class="svg-container">
-                    ${drawMicrometer(q.main, q.sub, q.thimble)}
+                <div class="question-title">પ્રશ્ન ${index + 1}: આપેલ ચિત્ર પરથી માઈક્રોમીટરનું રીડિંગ શોધીને લખો (mm માં)</div>
+                ${svgCode}
+                <div style="margin-top: 10px;">
+                    <label>તમારો જવાબ (mm):</label>
+                    <input type="number" step="0.01" id="ans_${index}" placeholder="દા.ત. 12.45" required>
                 </div>
-                <input type="number" step="0.01" id="ans_${index}" placeholder="તમારો જવાબ mm માં લખો (દા.ત. 12.45)" required>
             `;
             container.appendChild(qDiv);
         });
+        window.scrollTo(0, 0);
     }
 
     function submitQuiz() {
         let score = 0;
         let allAnswered = true;
 
-        selectedQuestions.forEach((q, index) => {
-            const inputVal = document.getElementById(`ans_${index}`).value;
+        for (let i = 0; i < selectedQuestions.length; i++) {
+            const inputVal = document.getElementById(`ans_${i}`).value;
             if (inputVal === "") {
                 allAnswered = false;
+                break;
             }
-        });
+        }
 
         if (!allAnswered) {
             alert("કૃપા કરીને બધા પ્રશ્નોના જવાબ આપો.");
@@ -183,13 +205,14 @@
             }
         });
 
-        traineeData.score = `${score} / 25`;
+        traineeData.score = `${score} / 20`;
 
         document.getElementById('quiz-area').style.display = 'none';
         document.getElementById('result-area').style.display = 'block';
         document.getElementById('scoreText').innerText = `${traineeData.name}, તમારો સ્કોર: ${traineeData.score}`;
+        window.scrollTo(0, 0);
 
-        // Google Sheet માં ડેટા મોકલવો
+        // Google Sheets માં ડેટા મોકલવો
         fetch(scriptURL, {
             method: 'POST',
             mode: 'no-cors',
