@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>માઈક્રોમીટર રીડિંગ ઓનલાઈન ટેસ્ટ</title>
+    <title>માઈક્રોમીટર રીડિંગ ઓનલાઈન ટેસ્ટ (10 પ્રશ્નો)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f5; margin: 0; padding: 15px; }
         .container { max-width: 750px; background: white; margin: 0 auto; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -16,14 +16,14 @@
         .question-card { background: #ffffff; padding: 18px; margin-bottom: 20px; border: 1px solid #dee2e6; border-left: 6px solid #0d6efd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .question-title { font-weight: bold; font-size: 1.1em; color: #2c3e50; margin-bottom: 12px; }
         
-        /* Clear SVG Styles */
+        /* SVG Box Styling */
         .micrometer-box { text-align: center; background: #111827; padding: 15px; border-radius: 8px; margin: 12px 0; overflow-x: auto; }
         .micrometer-svg { width: 100%; max-width: 550px; height: auto; display: block; margin: 0 auto; }
         
         .submit-btn { background: #198754; color: white; border: none; padding: 14px 20px; font-size: 18px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; transition: 0.3s; margin-top: 10px; }
         .submit-btn:hover { background: #157347; }
         
-        /* Result Answer Key Styling */
+        /* Answer Key Styling */
         .review-card { background: #ffffff; padding: 18px; margin-bottom: 20px; border-radius: 8px; border: 2px solid #ccc; text-align: left; }
         .review-card.correct { border-color: #198754; border-left: 8px solid #198754; }
         .review-card.incorrect { border-color: #dc3545; border-left: 8px solid #dc3545; }
@@ -54,7 +54,7 @@
         <button class="submit-btn" onclick="startQuiz()">ટેસ્ટ શરૂ કરો</button>
     </div>
 
-    <!-- ૨. ક્વિઝ એરિયા (૨૦ પ્રશ્નો) -->
+    <!-- ૨. ક્વિઝ એરિયા (૧૦ પ્રશ્નો) -->
     <div id="quiz-area">
         <form id="quizForm">
             <div id="questionsContainer"></div>
@@ -73,41 +73,53 @@
 </div>
 
 <script>
-    // તમારી Google Apps Script ની Web App URL
     const scriptURL = 'https://script.google.com/macros/s/AKfycbzdAg0vv-sWwcEfSQytap-L5L0sioEHND-EdH3ssdtHhN5IDaghifwcqJMkY51F92bTrw/exec';
     
     let traineeData = {};
     let selectedQuestions = [];
 
-    // અતિ સ્પષ્ટ પિક્સેલ કંટ્રાસ્ટ ધરાવતું SVG માઈક્રોમીટર ડ્રોઈંગ
-    function generateClearMicrometerSVG(mainScale, subScale, thimbleScale) {
-        let thimbleOffset = (mainScale + subScale) * 10;
+    // ૧૦૦% એક્યુરેટ SVG માઈક્રોમીટર જનરેટર
+    function generateClearMicrometerSVG(totalValue) {
+        let val = parseFloat(totalValue);
+        let mainScale = Math.floor(val);
+        let subScale = (val - mainScale >= 0.5) ? 0.5 : 0.0;
+        let thimbleScale = Math.round((val - mainScale - subScale) * 100);
+
+        let pxPerMM = 12; // 1 mm = 12px
+        let startX = 100;
+        let thimbleEdgeX = startX + (val * pxPerMM);
 
         let mainScaleLines = '';
         for (let i = 0; i <= 25; i++) {
-            let x = 120 + (i * 10);
+            let x = startX + (i * pxPerMM);
             let isFive = (i % 5 === 0);
             let h = isFive ? 28 : 16;
-            mainScaleLines += `<line x1="${x}" y1="80" x2="${x}" y2="${80 - h}" stroke="#ffffff" stroke-width="${isFive ? 2.5 : 1.5}"/>`;
-            if (isFive) {
-                mainScaleLines += `<text x="${x}" y="${80 - 32}" font-size="13" font-weight="bold" text-anchor="middle" fill="#38bdf8">${i}</text>`;
+            
+            if (x <= thimbleEdgeX + 2) {
+                mainScaleLines += `<line x1="${x}" y1="80" x2="${x}" y2="${80 - h}" stroke="#ffffff" stroke-width="${isFive ? 2.5 : 1.5}"/>`;
+                if (isFive) {
+                    mainScaleLines += `<text x="${x}" y="${80 - 32}" font-size="13" font-weight="bold" text-anchor="middle" fill="#38bdf8">${i}</text>`;
+                }
             }
         }
 
         let subScaleLines = '';
         for (let i = 0; i < 25; i++) {
-            let x = 125 + (i * 10);
-            subScaleLines += `<line x1="${x}" y1="80" x2="${x}" y2="96" stroke="#fbbf24" stroke-width="1.8"/>`;
+            let x = startX + (i * pxPerMM) + (pxPerMM / 2);
+            if (x <= thimbleEdgeX + 2) {
+                subScaleLines += `<line x1="${x}" y1="80" x2="${x}" y2="96" stroke="#fbbf24" stroke-width="1.8"/>`;
+            }
         }
 
         let thimbleLines = '';
-        for (let i = -5; i <= 55; i++) {
+        for (let i = -10; i <= 60; i++) {
             let y = 80 - ((i - thimbleScale) * 3.5);
-            if (y >= 15 && y <= 145) {
-                let isFive = (i % 5 === 0);
-                thimbleLines += `<line x1="${240 + thimbleOffset}" y1="${y}" x2="${260 + thimbleOffset}" y2="${y}" stroke="#ffffff" stroke-width="${isFive ? 2.5 : 1.2}"/>`;
-                if (isFive && i >= 0 && i < 50) {
-                    thimbleLines += `<text x="${268 + thimbleOffset}" y="${y + 4}" font-size="12" fill="#4ade80" font-weight="bold">${i}</text>`;
+            if (y >= 20 && y <= 140) {
+                let normI = (i % 50 + 50) % 50;
+                let isFive = (normI % 5 === 0);
+                thimbleLines += `<line x1="${thimbleEdgeX}" y1="${y}" x2="${thimbleEdgeX + 20}" y2="${y}" stroke="#ffffff" stroke-width="${isFive ? 2.5 : 1.2}"/>`;
+                if (isFive) {
+                    thimbleLines += `<text x="${thimbleEdgeX + 26}" y="${y + 4}" font-size="12" fill="#4ade80" font-weight="bold">${normI}</text>`;
                 }
             }
         }
@@ -116,37 +128,34 @@
         <div class="micrometer-box">
             <svg class="micrometer-svg" viewBox="0 0 520 160" xmlns="http://www.w3.org/2000/svg">
                 <rect width="100%" height="100%" fill="#111827" rx="6"/>
-                <rect x="30" y="66" width="90" height="28" fill="#4b5563" rx="3"/>
-                <rect x="120" y="45" width="280" height="70" fill="#1f2937" stroke="#4b5563" stroke-width="2"/>
-                <line x1="115" y1="80" x2="${240 + thimbleOffset}" y2="80" stroke="#f43f5e" stroke-width="3"/>
+                <rect x="20" y="66" width="80" height="28" fill="#4b5563" rx="3"/>
+                <rect x="100" y="45" width="320" height="70" fill="#1f2937" stroke="#4b5563" stroke-width="2"/>
+                <line x1="95" y1="80" x2="${thimbleEdgeX}" y2="80" stroke="#f43f5e" stroke-width="3"/>
                 ${mainScaleLines}
                 ${subScaleLines}
-                <path d="M ${240 + thimbleOffset} 20 L ${270 + thimbleOffset} 20 L ${295 + thimbleOffset} 35 L ${295 + thimbleOffset} 125 L ${270 + thimbleOffset} 140 L ${240 + thimbleOffset} 140 Z" fill="#374151" stroke="#9ca3af" stroke-width="2"/>
-                <line x1="${240 + thimbleOffset}" y1="20" x2="${240 + thimbleOffset}" y2="140" stroke="#f43f5e" stroke-width="3"/>
+                <path d="M ${thimbleEdgeX} 20 L ${thimbleEdgeX + 35} 20 L ${thimbleEdgeX + 60} 35 L ${thimbleEdgeX + 60} 125 L ${thimbleEdgeX + 35} 140 L ${thimbleEdgeX} 140 Z" fill="#374151" stroke="#9ca3af" stroke-width="2"/>
+                <line x1="${thimbleEdgeX}" y1="20" x2="${thimbleEdgeX}" y2="140" stroke="#f43f5e" stroke-width="3"/>
                 ${thimbleLines}
-                <rect x="${295 + thimbleOffset}" y="55" width="45" height="50" fill="#4b5563" rx="3" stroke="#6b7280"/>
+                <rect x="${thimbleEdgeX + 60}" y="55" width="45" height="50" fill="#4b5563" rx="3" stroke="#6b7280"/>
             </svg>
         </div>`;
     }
 
-    // ૨૦ રેન્ડમ પ્રશ્નો જનરેટ કરવા માટે
+    // ફક્ત ૧૦ પ્રશ્નો જ જનરેટ કરવા માટે
     function generateQuestions() {
         let questions = [];
         for (let i = 0; i < 40; i++) {
-            let mainScale = Math.floor(Math.random() * 18);
+            let mainScale = Math.floor(Math.random() * 22);
             let subScale = Math.random() < 0.5 ? 0.0 : 0.5;
             let thimbleScale = Math.floor(Math.random() * 50);
             
             let totalReading = (mainScale + subScale + (thimbleScale * 0.01)).toFixed(2);
             
             questions.push({
-                mainScale: mainScale,
-                subScale: subScale,
-                thimbleScale: thimbleScale,
                 correctAnswer: totalReading
             });
         }
-        return questions.sort(() => 0.5 - Math.random()).slice(0, 20);
+        return questions.sort(() => 0.5 - Math.random()).slice(0, 10);
     }
 
     function startQuiz() {
@@ -173,7 +182,7 @@
             const qDiv = document.createElement('div');
             qDiv.className = 'question-card';
             
-            const svgCode = generateClearMicrometerSVG(q.mainScale, q.subScale, q.thimbleScale);
+            const svgCode = generateClearMicrometerSVG(q.correctAnswer);
             
             qDiv.innerHTML = `
                 <div class="question-title">પ્રશ્ન ${index + 1}: આકૃતિમાં દર્શાવેલ માઈક્રોમીટરનું સાચું રીડિંગ શોધીને લખો (mm માં)</div>
@@ -203,7 +212,7 @@
         }
 
         if (!allAnswered) {
-            alert("કૃપા કરીને બધા ૨૦ પ્રશ્નોના જવાબ પૂર્ણ કરો.");
+            alert("કૃપા કરીને બધા ૧૦ પ્રશ્નોના જવાબ પૂર્ણ કરો.");
             return;
         }
 
@@ -213,13 +222,12 @@
             }
         });
 
-        traineeData.score = `${score} / 20`;
+        traineeData.score = `${score} / 10`;
 
         document.getElementById('quiz-area').style.display = 'none';
         document.getElementById('result-area').style.display = 'block';
         document.getElementById('scoreText').innerText = `${traineeData.name}, તમારો કુલ સ્કોર: ${traineeData.score}`;
 
-        // આન્સર કી (સંપૂર્ણ વિગતવાર પરિણામ) જનરેટ કરવું
         const answerKeyContainer = document.getElementById('answerKeyContainer');
         answerKeyContainer.innerHTML = '';
 
@@ -228,7 +236,7 @@
             const reviewCard = document.createElement('div');
             reviewCard.className = `review-card ${isCorrect ? 'correct' : 'incorrect'}`;
             
-            const svgCode = generateClearMicrometerSVG(q.mainScale, q.subScale, q.thimbleScale);
+            const svgCode = generateClearMicrometerSVG(q.correctAnswer);
 
             reviewCard.innerHTML = `
                 <div class="question-title" style="margin-bottom: 5px;">
@@ -245,7 +253,6 @@
 
         window.scrollTo(0, 0);
 
-        // Google Sheets માં પરિણામ મોકલવું
         fetch(scriptURL, {
             method: 'POST',
             mode: 'no-cors',
