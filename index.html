@@ -1,1 +1,203 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>માઈક્રોમીટર રીડિંગ પ્રેક્ટિસ ટેસ્ટ</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 750px; background: white; margin: 0 auto; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; display: block; margin-bottom: 5px; color: #333; }
+        input[type="text"], input[type="tel"], input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
+        .question-card { background: #eef2f5; padding: 15px; margin-bottom: 20px; border-left: 5px solid #3498db; border-radius: 4px; }
+        .question-title { font-weight: bold; font-size: 1.1em; color: #2c3e50; margin-bottom: 10px; }
+        .svg-container { text-align: center; margin: 15px 0; background: #ffffff; padding: 10px; border-radius: 5px; border: 1px solid #ddd; }
+        button { background: #27ae60; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; }
+        button:hover { background: #219150; }
+        #registration, #quiz-area, #result-area { display: none; }
+    </style>
+</head>
+<body>
 
+<div class="container">
+    <h2>માઈક્રોમીટર રીડિંગ ઓનલાઈન ટેસ્ટ</h2>
+
+    <!-- રજીસ્ટ્રેશન ફોર્મ -->
+    <div id="registration" style="display: block;">
+        <div class="form-group">
+            <label>તાલીમાર્થીનું નામ:</label>
+            <input type="text" id="traineeName" placeholder="તમારું પૂરૂં નામ લખો" required>
+        </div>
+        <div class="form-group">
+            <label>મોબાઈલ નંબર:</label>
+            <input type="tel" id="traineeMobile" placeholder="10 અંકનો મોબાઈલ નંબર" required>
+        </div>
+        <button onclick="startQuiz()">ટેસ્ટ શરૂ કરો</button>
+    </div>
+
+    <!-- ક્વિઝ એરિયા -->
+    <div id="quiz-area">
+        <form id="quizForm">
+            <div id="questionsContainer"></div>
+            <button type="button" onclick="submitQuiz()">ટેસ્ટ સબમિટ કરો</button>
+        </form>
+    </div>
+
+    <!-- રિઝલ્ટ એરિયા -->
+    <div id="result-area" style="text-align: center;">
+        <h3 style="color: #27ae60;">તમારી ટેસ્ટ સફળતાપૂર્વક સબમિટ થઈ ગઈ છે!</h3>
+        <p id="scoreText" style="font-size: 18px; font-weight: bold;"></p>
+    </div>
+</div>
+
+<script>
+    // તમારી Google Apps Script ની URL
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbzdAg0vv-sWwcEfSQytap-L5L0sioEHND-EdH3ssdtHhN5IDaghifwcqJMkY51F92bTrw/exec';
+    
+    let traineeData = {};
+    let selectedQuestions = [];
+
+    // ડાયનેમિક માઈક્રોમીટર ડ્રોઈંગ (SVG)
+    function drawMicrometer(mainScale, subScale, thimbleScale) {
+        let svg = `<svg width="100%" height="120" viewBox="0 0 400 120" xmlns="http://www.w3.org/2000/svg">
+            <!-- Sleeve Background -->
+            <rect x="20" y="35" width="220" height="50" fill="#d0d7de" stroke="#333" stroke-width="2"/>
+            <!-- Datum Line -->
+            <line x1="20" y1="60" x2="240" y2="60" stroke="#000" stroke-width="2"/>`;
+
+        // Main scale lines (0-20mm)
+        for (let i = 0; i <= 20; i++) {
+            let x = 40 + (i * 8);
+            let y2 = (i % 5 === 0) ? 40 : 48;
+            svg += `<line x1="${x}" y1="60" x2="${x}" y2="${y2}" stroke="#000" stroke-width="1.5"/>`;
+            if (i % 5 === 0) {
+                svg += `<text x="${x}" y="36" font-size="10" text-anchor="middle" font-family="sans-serif">${i}</text>`;
+            }
+            // Sub-scale (0.5mm lines)
+            if (i < 20) {
+                svg += `<line x1="${x + 4}" y1="60" x2="${x + 4}" y2="72" stroke="#000" stroke-width="1.5"/>`;
+            }
+        }
+
+        // Thimble Position calculation
+        let thimbleX = 40 + (mainScale * 8) + (subScale === 0.5 ? 4 : 0);
+
+        // Thimble Background
+        svg += `<path d="M ${thimbleX} 25 L ${thimbleX + 120} 25 L ${thimbleX + 120} 95 L ${thimbleX} 95 Z" fill="#a0aab2" stroke="#333" stroke-width="2"/>`;
+        svg += `<line x1="${thimbleX}" y1="25" x2="${thimbleX}" y2="95" stroke="#000" stroke-width="2"/>`;
+
+        // Thimble Divisions
+        for (let t = -5; t <= 5; t++) {
+            let val = (thimbleScale + t + 50) % 50;
+            let y = 60 - (t * 6);
+            if (y >= 30 && y <= 90) {
+                let len = (val % 5 === 0) ? 20 : 10;
+                svg += `<line x1="${thimbleX}" y1="${y}" x2="${thimbleX + len}" y2="${y}" stroke="#000" stroke-width="1"/>`;
+                if (val % 5 === 0) {
+                    svg += `<text x="${thimbleX + 26}" y="${y + 3}" font-size="9" text-anchor="middle" font-family="sans-serif">${val}</text>`;
+                }
+            }
+        }
+
+        svg += `</svg>`;
+        return svg;
+    }
+
+    // રેન્ડમ માઈક્રોમીટર પ્રશ્નો જનરેટ કરવા માટેનો પૂલ
+    function generateQuestions() {
+        let questions = [];
+        for (let i = 0; i < 50; i++) {
+            let mainScale = Math.floor(Math.random() * 15); // Main Scale (0-15 mm)
+            let subScale = Math.random() < 0.5 ? 0.0 : 0.5; // Sub Scale (0.0 or 0.5 mm)
+            let thimbleScale = Math.floor(Math.random() * 50); // Thimble Scale (0-49)
+            
+            let totalReading = (mainScale + subScale + (thimbleScale * 0.01)).toFixed(2);
+            
+            questions.push({
+                main: mainScale,
+                sub: subScale,
+                thimble: thimbleScale,
+                text: `નીચે આપેલા માઈક્રોમીટરનું સાચું રીડિંગ શોધો (mm માં):`,
+                correctAnswer: totalReading
+            });
+        }
+        
+        return questions.sort(() => 0.5 - Math.random()).slice(0, 25);
+    }
+
+    function startQuiz() {
+        const name = document.getElementById('traineeName').value.trim();
+        const mobile = document.getElementById('traineeMobile').value.trim();
+
+        if (name === "" || mobile.length !== 10) {
+            alert("કૃપા કરીને સાચું નામ અને 10 અંકનો મોબાઈલ નંબર નાખો.");
+            return;
+        }
+
+        traineeData.name = name;
+        traineeData.mobile = mobile;
+
+        document.getElementById('registration').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+
+        selectedQuestions = generateQuestions();
+        const container = document.getElementById('questionsContainer');
+        container.innerHTML = '';
+
+        selectedQuestions.forEach((q, index) => {
+            const qDiv = document.createElement('div');
+            qDiv.className = 'question-card';
+            qDiv.innerHTML = `
+                <div class="question-title">${index + 1}. ${q.text}</div>
+                <div class="svg-container">
+                    ${drawMicrometer(q.main, q.sub, q.thimble)}
+                </div>
+                <input type="number" step="0.01" id="ans_${index}" placeholder="તમારો જવાબ mm માં લખો (દા.ત. 12.45)" required>
+            `;
+            container.appendChild(qDiv);
+        });
+    }
+
+    function submitQuiz() {
+        let score = 0;
+        let allAnswered = true;
+
+        selectedQuestions.forEach((q, index) => {
+            const inputVal = document.getElementById(`ans_${index}`).value;
+            if (inputVal === "") {
+                allAnswered = false;
+            }
+        });
+
+        if (!allAnswered) {
+            alert("કૃપા કરીને બધા પ્રશ્નોના જવાબ આપો.");
+            return;
+        }
+
+        selectedQuestions.forEach((q, index) => {
+            const userAns = parseFloat(document.getElementById(`ans_${index}`).value).toFixed(2);
+            if (userAns === q.correctAnswer) {
+                score++;
+            }
+        });
+
+        traineeData.score = `${score} / 25`;
+
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('result-area').style.display = 'block';
+        document.getElementById('scoreText').innerText = `${traineeData.name}, તમારો સ્કોર: ${traineeData.score}`;
+
+        // Google Sheet માં ડેટા મોકલવો
+        fetch(scriptURL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(traineeData)
+        }).catch(error => console.error('Error!', error.message));
+    }
+</script>
+
+</body>
+</html>
